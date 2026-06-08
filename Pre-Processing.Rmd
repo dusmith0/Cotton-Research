@@ -1,0 +1,14 @@
+---
+title: "Pre-Processing"
+author: "Dustin Smith"
+date: "2026-06-08"
+output: pdf_document
+---
+
+Initial Pre-Processing of the Climate and Cotton Data
+
+Nameing Conventions:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
