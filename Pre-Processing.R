@@ -163,11 +163,34 @@ Cotton_Climate <- Cotton %>%
   left_join(Collapsed_Climate, by = c("Year", "County"))
 
 View(Cotton_Climate)
+
+
+
 ### Creating a data frame for Accumulated GDD for each region and year. 
-#Accumulated_Climate <- Climate %<%
-#  filter(year(DATE) >= "1968") %<%
+Accumulated_Climate <- Climate %>%
+  select(DATE, County, TMAX, TMIN) %>%
+  filter(year(DATE) >= "1968" & month(DATE) %in% 5:10) %>%
+  mutate(Year = year(DATE)) %>% 
+
+  group_by(Year, County) %>%
+  mutate(
+    DailyGDD = cumsum(pmax((TMAX + TMIN)/2 - 60,0))) %>%
+  ungroup() %>%
+  
+  select(Year, County, DailyGDD) %>%
+  group_by(Year, County) %>%
+  nest(GDDhistory = c(DailyGDD)) %>%
+  ungroup()
 
 
+View(Accumulated_Climate)
 
 ##### For exporting the file as a ready XLS file
 #write_xlsx(Cotton_Climate, path = "Data\\Cotton_Climate.xlsx")
+
+#export <- Accumulated_Climate %>%
+#  unnest(GDDhistory) %>%
+#  group_by(Year, County) %>%
+#  ungroup()
+
+#write_xlsx(export, path = "Data\\Cotton_GDD_data.xlsx")
