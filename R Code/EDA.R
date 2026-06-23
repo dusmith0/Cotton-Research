@@ -37,6 +37,7 @@ library("patchwork")
 library("rlang")
 library("tibble")
 library("purrr")
+library("glue")
 
 
 ##### Defining visual colors:
@@ -48,7 +49,8 @@ colors = c(
   "#0072B2",  #5 Blue  -- Base color
   "#D55E00",  #6 Vermillion
   "#CC79A7",  #7 Reddish Purple # Background colors?
-  "#000000"   #8 Black
+  "#000080",  #8 Deep Navy
+  "#000000"   #9 Black
 ) #  okabe_ito
 
 ##### Reading in the rds files
@@ -74,8 +76,38 @@ colSums(is.na(Cotton))
 ##### EDA
 
 ### Abandonment 
+## General Values
 ave_rate <- aggregate(Cotton$total_abandon ~ Cotton$County, FUN = mean)
+names(ave_rate) <- c("County", "Average")
+sd_rate <- aggregate(Cotton$total_abandon ~ Cotton$County, FUN = sd)
+names(sd_rate) <- c("County", "Standard Deviation")
 mean(ave_rate[,2])
+mean(sd_rate[,2])
+
+abandon_table <- left_join(ave_rate, sd_rate)
+abandon_table
+
+## Some simple testing
+norm_test <- shapiro.test(Cotton$total_abandon)$p.value
+zero_inflation <- mean(Cotton$total_abandon == 0)
+
+glue("The Total Abandonment has the following meta data:
+     Overall Mean:              {mean(ave_rate[,2])}
+     Overall Standard Devation: {mean(sd_rate[,2])}
+     Shapiro-Wilks Test:        {norm_test}
+     Zero inflation:            {zero_inflation}")
+
+### plotting histogram of abandonment
+
+
+ggplot(data = Cotton, aes(x = (total_abandon))) + 
+  geom_histogram(fill = colors[5]) + 
+  labs(
+    title = "Distribution of Total Abandonment",
+    x = "Abandonment Rate",
+    y = "Frequency"
+  ) + theme_minimal()
+
 
 #--- Average across year per county and plot for general trend
 ggplot(data = Cotton, aes(x = Year, y = total_abandon)) + 
@@ -123,9 +155,9 @@ ggplot(data = Cotton) +
   geom_boxplot(aes(x = total_abandon, y = "Total"), fill = colors[5]) + 
   geom_boxplot(aes(x = non_irrigated_abandon, y = "Dry Land"), fill = colors[5]) + 
   geom_boxplot(aes(x = irrigated_abandon, y = "Irrigated"), fill = colors[5]) + labs(
-    title = "Abandonment varation across irrigation type",
+    title = "Abandonment varation across Irrigation Type",
     x = "Abandonment Rate",
-    y = "Irrigatin Type"
+    y = "Irrigation Type"
   ) +
   theme_minimal()
 
@@ -268,5 +300,30 @@ ggplot() +
     theme_minimal()
 
      
-     
-     
+
+### Correlation Heat map
+names(Cotton)
+Seasons <- c( ## capitalized to avoid issues with the previous seasons
+  "Total" = "Total",
+  "S1"    = "Season 1",
+  "S2"    = "Season 2",
+  "S3"    = "Season 3"
+)
+
+corrplots <- lapply(names(Seasons), function(prefix) {
+  correlation <- cor(Cotton[,c("total_abandon", paste0(prefix, toupper(climate_values)))])
+  colnames(correlation)[colnames(correlation) == "total_abandon"] <- "Abandonment"
+  rownames(correlation)[rownames(correlation) == "total_abandon"] <- "Abandonment"
+  
+
+  ggcorrplot(correlation, method = "square", type = "lower",
+           colors = c("white",colors[2],colors[8]),
+           lab = TRUE) + 
+    labs(title = "Heatmap",
+        subtitle = paste0(Seasons[prefix],  " Climate indicators"))
+})
+
+corrplots
+
+### Checking total plot connections between Abandonment and 
+
