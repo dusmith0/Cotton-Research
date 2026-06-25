@@ -38,6 +38,7 @@ library("rlang")
 library("tibble")
 library("purrr")
 library("glue")
+library("ggcorrplot")
 
 
 ##### Defining visual colors:
@@ -192,6 +193,21 @@ climate_ave <- Cotton %>%
    totalgdd = mean(TotalGDD),
   )
 
+
+### Mann-Kendall Testing for trends and FDR alpha corrections
+install.packages("Kendall")
+library(Kendall)
+names(Cotton)
+
+ordered_cotton <- Cotton[order(Cotton$Year),]
+
+kendall <- sapply(ordered_cotton[,c(10,13:ncol(ordered_cotton))], function(x) MannKendall(x)$sl)
+tau <- sapply(ordered_cotton[,c(10,13:ncol(ordered_cotton))], function(x) MannKendall(x)$tau)
+FDR <- p.adjust(kendall, method = "BH") ## FDR alpha correction
+
+true_trend <- data.frame("Variable" = names(FDR), "P-Value" = as.numeric(FDR), "Tau" = round(tau, 3)) 
+true_trend$Significant <- ifelse(true_trend[,2] < .05, "Yes", "No")
+true_trend
 
 ### This function takes climate names and plots 4 time based graphs for each seasonal period. 
 plot_average <- function(climate_value){
