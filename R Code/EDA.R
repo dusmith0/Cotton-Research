@@ -72,7 +72,6 @@ dim(Cotton)
 
 colSums(is.na(Cotton))
 
-
 ##### EDA
 
 ### Abandonment 
@@ -244,10 +243,10 @@ all_plot_averages
 
 
 ### GDD -- This is a Tibble....
-glimpse(GDD)
-colSums(is.na(GDD))
-View(average_GDD)
-sum(is.na(average_GDD$Average_GDD))
+# glimpse(GDD) ## Debugging
+# colSums(is.na(GDD)) ## Debugging
+# View(average_GDD) ## Debugging
+# sum(is.na(average_GDD$Average_GDD)) ## Debugging cheching for missing
 
 
 ### Creating the Averaged GDD plot:

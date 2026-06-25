@@ -83,9 +83,9 @@ unique(Cotton$County)
 lubbock.data <- read.csv("Data\\Lubbock Climate.csv")
 climate.data <- read.csv("Data\\West Texas CLimate Data.csv")
 
-names(climate.data)
-unique(climate.data$NAME)
-str(climate.data)
+# names(climate.data) ## Debugging
+# unique(climate.data$NAME) ## Debugging
+# str(climate.data) ## Debugging
 
 ## renaming to create a relational database with the Cotton 
 Climate <- climate.data %>%
@@ -105,10 +105,9 @@ Climate <- climate.data %>%
   )) %>%
   select(-NAME)
 
-View(Climate)
+# View(Climate) ## Debugging
+# str(Climate) ## Debugging
 
-
-str(Climate)
 ### Pre-processing Calculations
 
 ## setting seasonal splits
@@ -153,26 +152,25 @@ Collapsed_Climate <- Climate %>%
     ) %>%
   rename(Year = "year(DATE)")
   
-View(Collapsed_Climate)
-names(Collapsed_Climate)
-names(Cotton)
-View(Cotton)
+# View(Collapsed_Climate) ## Debugging
+# names(Collapsed_Climate) ## Debugging
+# names(Cotton) ## Debugging
+# View(Cotton) ## Debugging
 
 ### Merging the Climate and Cotton Data
 Cotton_Climate <- Cotton %>%
   left_join(Collapsed_Climate, by = c("Year", "County"))
 
-View(Cotton_Climate)
-
+# View(Cotton_Climate) ## Debugging
 
 ##_______________________
 # Need to adjust the Accumulated to have interpolated missing data by
 # A) averaging each day of other counties for that year to input in the missing spot
 # B) caculating the overall average per that one year/county 
 
-names(Climate)
-head(Climate$DATE)
-colSums(is.na(Climate))
+# names(Climate) ## Debugging
+# head(Climate$DATE) ## Debugging
+# colSums(is.na(Climate)) ## Debugging and cheching for missing values
 
 ### Creating a data frame for Accumulated GDD for each region and year. 
 Accumulated_Climate <- Climate %>%
@@ -206,8 +204,7 @@ Accumulated_Climate <- Climate %>%
   ungroup()
 
 
-View(Accumulated_Climate)
-
+# View(Accumulated_Climate) ## Debugging
 
 ##### Sending the data to rds files for project use
 write_rds(Cotton_Climate, "Data/Cotton_Climate.rds")
