@@ -39,6 +39,8 @@ library("tibble")
 library("purrr")
 library("glue")
 library("ggcorrplot")
+library("clipr")
+library("Kendall")
 
 
 ##### Defining visual colors:
@@ -58,6 +60,11 @@ colors = c(
 Cotton <- read_rds("Data/Cotton_Climate.rds") 
 GDD <- read_rds("Data/Accumulated_Climate.rds")
 
+dim(Cotton)
+dim(GDD)
+unique(Cotton$County)
+
+
 ### Checking for missing data
 dim(Cotton)
 colSums(is.na(Cotton))
@@ -70,7 +77,6 @@ Cotton <- Cotton[- c(which(is.na(Cotton$S1PRCP)), which(is.na(Cotton$TotalTMIN))
 ### Potter County is removed due to a lack of observations (only two)
 Cotton <- Cotton[- which(Cotton$County == "POTTER"),]
 dim(Cotton)
-
 colSums(is.na(Cotton))
 
 ##### EDA
@@ -85,11 +91,14 @@ mean(ave_rate[,2])
 mean(sd_rate[,2])
 
 abandon_table <- left_join(ave_rate, sd_rate)
-abandon_table
+write_clip(apply(abandon_table[,c(2,3)], 2, function(x) round(x,2)))
 
 ## Some simple testing
 norm_test <- shapiro.test(Cotton$total_abandon)$p.value
 zero_inflation <- mean(Cotton$total_abandon == 0)
+max(Cotton$total_abandon)
+
+Cotton[which(Cotton$total_abandon == max(Cotton$total_abandon)),]
 
 glue("The Total Abandonment has the following meta data:
      Overall Mean:              {mean(ave_rate[,2])}
@@ -146,8 +155,9 @@ ggplot(data = county_abandon, aes(x = County, y = total_abandon)) +
   geom_point(aes(x = County, y = ave), shape = 18, size = 3, color = colors[1]) + 
   labs(
     title = "Abandonment varation across County"
-  ) +
-  theme_minimal()
+  ) + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  
 
 ## Comparing Irrigated
 names(Cotton)
@@ -195,10 +205,6 @@ climate_ave <- Cotton %>%
 
 
 ### Mann-Kendall Testing for trends and FDR alpha corrections
-install.packages("Kendall")
-library(Kendall)
-names(Cotton)
-
 ordered_cotton <- Cotton[order(Cotton$Year),]
 
 kendall <- sapply(ordered_cotton[,c(10,13:ncol(ordered_cotton))], function(x) MannKendall(x)$sl)
@@ -207,7 +213,8 @@ FDR <- p.adjust(kendall, method = "BH") ## FDR alpha correction
 
 true_trend <- data.frame("Variable" = names(FDR), "P-Value" = as.numeric(FDR), "Tau" = round(tau, 3)) 
 true_trend$Significant <- ifelse(true_trend[,2] < .05, "Yes", "No")
-true_trend
+View(true_trend)
+write_clip(true_trend)
 
 ### This function takes climate names and plots 4 time based graphs for each seasonal period. 
 plot_average <- function(climate_value){
@@ -333,9 +340,13 @@ corrplots <- lapply(names(Seasons), function(prefix) {
 
   ggcorrplot(correlation, method = "square", type = "lower",
            colors = c("white",colors[2],colors[8]),
-           lab = TRUE) + 
+           lab = TRUE, lab_size = 2) + 
     labs(title = "Heatmap",
-        subtitle = paste0(Seasons[prefix],  " Climate indicators"))
+        subtitle = paste0(Seasons[prefix],  " Climate indicators")) + 
+    theme(
+      axis.text.x = element_text(size = 8, angle = 45, vjust = 1, hjust = 1),
+      axis.text.y = element_text(size = 8)
+    )
 })
 
 corrplots

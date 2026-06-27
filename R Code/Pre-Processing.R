@@ -51,11 +51,15 @@ calcualte_GDDA <- function(TMAX, TMIN){
 ### Cotton Data
 #***** Add a section to control for uncertainty of file location
 cotton.data <- read.csv("Original Cotton Abandonment data.csv")
+
 ## Removing unwanted ',' is the values data
 cotton.data$Value <- gsub(",","", cotton.data$Value)
 
 Cotton <- cotton.data %>%
-  filter(County %in% c("POTTER","RANDALL","HALE","LUBBOCK","CROSBY","GAINES")) %>%
+  filter(County %in% c("POTTER","RANDALL","HALE","LUBBOCK","CROSBY","GAINES","DAWSON","LAMB","TERRY")) %>% 
+  # Brownfield <- Terry
+  # Littlefield <- Lamb
+  # LAMESA <- Dawson
   select(Year, Ag.District.Code, County, Data.Item, Value) %>%
   mutate(Value = as.integer(Value)) %>%
   pivot_wider(names_from = Data.Item, values_from = Value) %>%
@@ -71,8 +75,8 @@ Cotton <- cotton.data %>%
          irrigated_abandon     = abandonment_rate(irrigated_harvested,irrigated_planted),
          non_irrigated_abandon = abandonment_rate(non_irrigated_harvested,non_irrigated_planted))
   
-View(Cotton)
-unique(Cotton$County)
+# View(Cotton) ## Debugging
+# unique(Cotton$County) ## Debugging
 
 ## Checking for missing values
 #aggregate(Value ~ County, data = Cotton, FUN = function(x) sum(is.na(x)))
@@ -82,6 +86,12 @@ unique(Cotton$County)
 ### Climate Data
 lubbock.data <- read.csv("Data\\Lubbock Climate.csv")
 climate.data <- read.csv("Data\\West Texas CLimate Data.csv")
+other.data <- read.csv("Data\\Additional_Climate_Counties.csv")
+# dim(other.data)
+# dim(climate.data)
+
+climate.data <- bind_rows(climate.data, other.data)
+# unique(climate.data$NAME) ## Ensureing they fully combined
 
 # names(climate.data) ## Debugging
 # unique(climate.data$NAME) ## Debugging
@@ -101,12 +111,17 @@ Climate <- climate.data %>%
     "SEMINOLE, TX US"                      ~ "GAINES",
     "LUBBOCK INTERNATIONAL AIRPORT, TX US" ~ "LUBBOCK",
     "CANYON, TX US"                        ~ "RANDALL",
-    "AMARILLO AIRPORT, TX US"              ~ "POTTER"
+    "AMARILLO AIRPORT, TX US"              ~ "POTTER", # Later Removed for lack of observations in cotton
+    ## Added Counties
+    "BROWNFIELD, TX US"                    ~ "TERRY",
+    "LITTLEFIELD, TX US"                   ~ "LAMB",
+    "LAMESA 1 SSE, TX US"                  ~ "DAWSON"
+    
   )) %>%
   select(-NAME)
 
 # View(Climate) ## Debugging
-# str(Climate) ## Debugging
+# unique(Climate$County) ## Debugging
 
 ### Pre-processing Calculations
 
@@ -161,12 +176,15 @@ Collapsed_Climate <- Climate %>%
 Cotton_Climate <- Cotton %>%
   left_join(Collapsed_Climate, by = c("Year", "County"))
 
+# sum(colSums(is.na(Climate))) / (98122*5) Checking missing rations
+# names(Climate)
+# dim(Climate)
 # View(Cotton_Climate) ## Debugging
 
 ##_______________________
 # Need to adjust the Accumulated to have interpolated missing data by
 # A) averaging each day of other counties for that year to input in the missing spot
-# B) caculating the overall average per that one year/county 
+# B) calculating the overall average per that one year/county 
 
 # names(Climate) ## Debugging
 # head(Climate$DATE) ## Debugging
@@ -192,7 +210,7 @@ Accumulated_Climate <- Climate %>%
   ) %>%
   ungroup() %>%
     
-  ## Regrouping and calculating Accumplative Sums. 
+  ## Regrouping and calculating Accumulative Sums. 
   group_by(Year, County) %>%
   mutate(
     DailyGDD = cumsum(pmax((TMAX + TMIN)/2 - 60,0))) %>%
@@ -219,3 +237,4 @@ write_rds(Accumulated_Climate, "Data/Accumulated_Climate.rds")
 #  ungroup()
 
 #write_xlsx(export, path = "Data\\Cotton_GDD_data.xlsx")
+
