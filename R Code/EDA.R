@@ -351,5 +351,4 @@ corrplots <- lapply(names(Seasons), function(prefix) {
 
 corrplots
 
-### Checking total plot connections between Abandonment and 
 

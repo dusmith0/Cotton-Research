@@ -91,7 +91,7 @@ colSums(is.na(Cotton))
 names(Cotton)
 
 h1_data <- Cotton %>%
-  select(TotalTMAX, TotalPRCP, total_abandon) %>%
+  select(TotalTMAX, TotalTMIN, TotalPRCP, total_abandon) %>%
   mutate(Level = case_when(
     total_abandon > quantile(total_abandon, .75) ~ "High",
     total_abandon > quantile(total_abandon, .5)  ~ "Medium-High",
@@ -101,7 +101,8 @@ h1_data <- Cotton %>%
 
 ## ScatterPlot
 ggplot(data = h1_data, aes(x = TotalTMAX, y = TotalPRCP, color = Level)) + 
-  geom_point() + theme_minimal() + 
+  geom_point(size = 2) + theme_minimal() + 
+  scale_color_manual(values = colors[c(1,2,3,7)]) +
   labs(
     title = "Effect of Heat and Perciptation on Abandonment",
     subtitle = "Total Abandonment",
@@ -121,7 +122,8 @@ h1_data_non <- Cotton %>%
   ))
 
 ggplot(data = h1_data_non, aes(x = TotalTMAX, y = TotalPRCP, color = Level)) + 
-  geom_point() + theme_minimal() + 
+  geom_point(size = 2) + theme_minimal() + 
+  scale_color_manual(values = colors[c(1,2,3,7)]) +
   labs(
     title = "Effect of Heat and Perciptation on Abandonment",
     subtitle = "Non-Irrigated Abandonment",
@@ -141,7 +143,8 @@ h1_data_non <- Cotton %>%
   ))
 
 ggplot(data = h1_data_non, aes(x = TotalTMAX, y = TotalPRCP, color = Level)) + 
-  geom_point() + theme_minimal() + 
+  geom_point(size = 2) + theme_minimal() + 
+  scale_color_manual(values = colors[c(1,2,3,7)]) +
   labs(
     title = "Effect of Heat and Perciptation on Abandonment",
     subtitle = "Non-Irrigated Abandonment",
@@ -153,7 +156,6 @@ head(h1_data_non)
 
 ### Comment: There is no reason to believe PRCP and TMAX have a correlated effect, 
 ### There is also discernible connection between PRCP and TMAX in irrigated or non-irrigated data either. 
-
 
 
 cor(h1_data[,c(1,2,3)])
@@ -297,6 +299,8 @@ average_GDD <- GDD %>%
   group_by(day) %>%
   summarize(Average_GDD = mean(DailyGDD, na.rm = TRUE)) 
 
+
+
 #### --------------------------------------------------- ####
 #### --------------------------------------------------- ####
 ## This needs to be in the Pre-Processing file
@@ -377,4 +381,52 @@ corrplots <- lapply(names(Seasons), function(prefix) {
 
 corrplots
 
+### Checking total plot connections between Abandonment and 
 
+names(Cotton)
+
+ggplot(data = Cotton, aes(x = TotalDeparture, y = total_abandon)) + 
+  geom_point(color = colors[5]) + 
+  geom_smooth(method = 'loess', se = TRUE, color = colors[1]) + 
+  labs(
+    title = "Departure of Growing Degree Days vs Abandonment",
+    x = "Averaged Departure",
+    y = "Abandonment Rate"
+  ) + 
+  theme_minimal()
+
+ggplot(data = Cotton, aes(x = TotalGDD, y = total_abandon)) + 
+  geom_point(color = colors[5]) + 
+  geom_smooth(method = 'loess', se = TRUE, color = colors[1]) + 
+  labs(
+    title = "Growing Degree Days vs Abandonment",
+    x = "Averaged Departure",
+    y = "Abandonment Rate"
+  ) + 
+  theme_minimal()
+
+
+### Generating some other non-linear plots
+
+ggplot(data = Cotton, aes(x = TotalPRCP, y = total_abandon)) + 
+  geom_point(color = colors[5]) + 
+  geom_smooth(method = 'loess', se = TRUE, color = colors[1]) + 
+  labs(
+    title = "Precipitation vs Abandonment",
+    x = "Precipitation",
+    y = "Abandonment Rate"
+  ) + 
+  theme_minimal()
+
+ggplot(data = Cotton, aes(x = S2TMAX, y= total_abandon)) + 
+  geom_point(color = colors[5]) + 
+  geom_smooth(method = 'loess', se = TRUE, color = colors[1]) + 
+  labs(
+    title = "Season 2 Max Temp. vs Abandonment",
+    x = "Temperature",
+    y = "Abandonment Rate"
+  ) + 
+  theme_minimal()
+
+
+  
