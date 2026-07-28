@@ -175,7 +175,7 @@ FDR <- p.adjust(kendall, method = "BH") ## FDR alpha correction
 
 true_trend <- data.frame("Variable" = names(FDR), "P-Value" = as.numeric(FDR), "Tau" = round(tau, 3)) 
 true_trend$Significant <- ifelse(true_trend[,2] < .05, "Yes", "No")
-
+nrow(true_trend)
 
 ### Interaction Testing:
 fit <- glm(total_abandon ~ TotalTMAX * TotalPRCP, 
@@ -185,8 +185,6 @@ fit <- glm(total_abandon ~ TotalTMAX * TotalPRCP,
 summary(fit)
 
 ## It seems that the interaction term is indeed significant. 
-###
-
 
 
 #### --------------------------------------------------- ####
@@ -302,10 +300,6 @@ error <- loss(
 
 error
 
-
-#### --------------------------------------------------- ####
-#### Quasibinomial 
-
 ## Departure
 departure <- glm(total_abandon ~ County + S1Departure*S1PRCP + S2Departure*S2PRCP + S3Departure*S3PRCP + 
              S1EXTREME*S1PRCP + S2EXTREME*S2PRCP + S3EXTREME*S3PRCP,
@@ -413,8 +407,6 @@ error <- loss(
 )
 
 error
-
-
 
 
 #### --------------------------------------------------- ####
@@ -530,10 +522,9 @@ cv_glm <- function(model, data, train_index, test_index){
 #### --------------------------------------------------- ####
 #### Preforming Cross Validation
 #### --------------------------------------------------- ####
-models <- c("total_abandon ~ County + S1Departure*S1PRCP + 
-                  S2Departure*S2PRCP + S3Departure*S3PRCP + 
-                  S1EXTREME*S1PRCP + S2EXTREME*S2PRCP + 
-                  S3EXTREME*S3PRCP", # Total
+models <- c("total_abandon ~  County + TotalTMIN + TotalHAIL +
+                  TotalEXTREME * TotalPRCP + 
+                  TotalTMAX * TotalPRCP", # Total
             
                  "total_abandon ~ County + S1TMIN + S2TMIN + S3TMIN + 
                   S1HAIL + S2HAIL + S3HAIL + 
@@ -557,10 +548,12 @@ models <- c("total_abandon ~ County + S1Departure*S1PRCP +
 
 CV_Loss_Table <- matrix(nrow = 4, ncol = 5)
 RMSE_Loss <- matrix(nrow = fold_count, ncol = 5)
+WRMSE_Loss <- matrix(nrow = fold_count, ncol = 5)
 for(i in 1:length(models)){
   err <- cv_glm(model = models[i], data = train_scaled, train_index = train_index, test_index = test_index)
   
   RMSE_Loss[,i] <- err[,1]
+  WRMSE_Loss[,i] <- err[,2]
   CV_Loss_Table[,i] <- colMeans(err)
   colnames(RMSE_Loss) <- c("Total","Seasonal","GDD","Departure","Complete")
   colnames(CV_Loss_Table) <- c("Total","Seasonal","GDD","Departure","Complete")
@@ -568,26 +561,26 @@ for(i in 1:length(models)){
 
 CV_Loss_Table
 RMSE_Loss
+WRMSE_Loss
 
 #### --------------------------------------------------- ####
 #### H2 and H3 Statistical Tests and Confidence Intervals
 #### --------------------------------------------------- ####
 .05/4
-seasonal_p <- wilcox.test(RMSE_Loss[,1], RMSE_Loss[,2], paired = TRUE, exact = FALSE)$p.value
+seasonal_p <- wilcox.test(WRMSE_Loss[,2], WRMSE_Loss[,1], paired = TRUE, exact = FALSE)$p.value
+GDD_p <- (wilcox.test(WRMSE_Loss[,1], WRMSE_Loss[,3], paired = TRUE, exact = FALSE))$p.value
+departure_p <- (wilcox.test(WRMSE_Loss[,1], WRMSE_Loss[,4], paired = TRUE, exact = FALSE))$p.value
+wilcox.test(WRMSE_Loss[,1], WRMSE_Loss[,5], paired = TRUE, exact = FALSE)
+
+
 print(glue("Wilcoxon P-value Total vs Seasonal is: {round(seasonal_p, 4)}"))
-
-GDD_p <- (wilcox.test(RMSE_Loss[,1], RMSE_Loss[,3], paired = TRUE, exact = FALSE))$p.value
 print(glue("Wilcoxon P-value Total vs GDD is: {round(GDD_p, 4)}"))
-
-departure_p <- (wilcox.test(RMSE_Loss[,1], RMSE_Loss[,4], paired = TRUE, exact = FALSE))$p.value
 print(glue("Wilcoxon P-value Total vs Departue is: {round(departure_p, 4)}"))
-
-wilcox.test(RMSE_Loss[,1], RMSE_Loss[,5], paired = TRUE, exact = FALSE)
 
 
 Interval <- matrix(nrow = 2, ncol = 5)
 for(i in 1:5){
-  Interval[,i] <- (mean(RMSE_Loss[,i]) + c(-1,1)*sd(RMSE_Loss)/sqrt(fold_count))
+  Interval[,i] <- (mean(WRMSE_Loss[,i]) + c(-1,1)*sd(WRMSE_Loss)/sqrt(fold_count))
   colnames(Interval) <- c("Total","Seasonal","GDD","Departure","Complete")
 }
 
@@ -737,13 +730,17 @@ err_forest <- cv_forest(model = model_forest, data = train_scaled, train_index =
 colMeans(err_forest)
 
 forest_p <- wilcox.test(RMSE_Loss[,1], err_forest[,1], paired = TRUE, exact = FALSE)$p.value
+forest_wp <- wilcox.test(RMSE_Loss[,2], err_forest[,2], paired = TRUE, exact = FALSE)$p.value
+
 print(glue("GLM vs RandomForest: {round(forest_p, 4)}"))
+print(glue("GLM vs RandomForest Weighted: {round(forest_p, 4)}"))
 
 (mean(err_forest[,1]) + c(-1,1)*sd(err_forest[,1])/sqrt(fold_count))
+(mean(err_forest[,2]) + c(-1,1)*sd(err_forest[,2])/sqrt(fold_count))
 
 
 #### --------------------------------------------------- ####
-#### Forest on OUt of sample data for predictions
+#### Forest on Out of sample data for predictions
 #### --------------------------------------------------- ####
 Use this : importance = "permutation"
 
