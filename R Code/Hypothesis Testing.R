@@ -177,6 +177,7 @@ true_trend <- data.frame("Variable" = names(FDR), "P-Value" = as.numeric(FDR), "
 true_trend$Significant <- ifelse(true_trend[,2] < .05, "Yes", "No")
 nrow(true_trend)
 
+
 ### Interaction Testing:
 fit <- glm(total_abandon ~ TotalTMAX * TotalPRCP, 
            family = quasibinomial("logit"), 
@@ -209,8 +210,8 @@ ggplot(resid(base)$residuals, aes(x = Fitted, y = deviance)) +
   labs(
     title = "Standardized Deviance Plot",
     subtitle = "Total Climate Stress",
-    x = "Deviance",
-    y = "Fitted values",
+    y = "Deviance",
+    x = "Fitted values",
   ) + theme_minimal()
 
 HOLD$pred_base <- predict(
@@ -245,8 +246,8 @@ ggplot(resid(seasonal)$residuals, aes(x = Fitted, y = deviance)) +
   labs(
     title = "Standardized Deviance Plot",
     subtitle = "Seasonal Climate Stress",
-    x = "Deviance",
-    y = "Fitted values",
+    y = "Deviance",
+    x = "Fitted values",
   ) + theme_minimal()
 
 
@@ -280,8 +281,8 @@ ggplot(resid(gdd)$residuals, aes(x = Fitted, y = deviance)) +
   labs(
     title = "Standardized Deviance Plot",
     subtitle = "GDD trends",
-    x = "Deviance",
-    y = "Fitted values",
+    y = "Deviance",
+    x = "Fitted values",
   ) + theme_minimal()
 
 HOLD$pred_gdd <- predict(
@@ -313,8 +314,8 @@ ggplot(resid(departure)$residuals, aes(x = Fitted, y = deviance)) +
   labs(
     title = "Standardized Deviance Plot",
     subtitle = "GDD departure trends",
-    x = "Deviance",
-    y = "Fitted values",
+    y = "Deviance",
+    x = "Fitted values",
   ) + theme_minimal()
 
 HOLD$pred_departure <- predict(
@@ -350,8 +351,8 @@ ggplot(resid(complete)$residuals, aes(x = Fitted, y = deviance)) +
   labs(
     title = "Standardized Deviance Plot",
     subtitle = "Complete Data Set",
-    x = "Deviance",
-    y = "Fitted values",
+    y = "Deviance",
+    x = "Fitted values",
   ) + theme_minimal()
 
 
@@ -420,7 +421,7 @@ length(unique(train$Year))/4
 ## Creating a Custom Cross-Validation Fixed Forward Window Split
 years <- sort(unique(train$Year), decreasing = FALSE)
 window <- 10
-test_window <- 4
+test_window <- 1
 
 rm(train_index, test_index)
 train_index <- list()
@@ -617,13 +618,16 @@ y_matrix_prop <- cbind(
 
 norm_weights <- train_scaled$total_planted / mean(train_scaled$total_planted)
 
+County_factors <- ifelse(grepl("County", colnames(master_matrix)), 0, 1)
+
 fit <- cv.glmnet(
   x = x_total,
   y = y_matrix_prop,
   weights = norm_weights,
   family = 'binomial',
   intercept = FALSE,
-  alpha = 1 
+  alpha = .9,
+  penalty.factor = County_factors
 )
 
 HOLD_scaled$pred_abandon <- (1 - predict(
@@ -742,7 +746,7 @@ print(glue("GLM vs RandomForest Weighted: {round(forest_p, 4)}"))
 #### --------------------------------------------------- ####
 #### Forest on Out of sample data for predictions
 #### --------------------------------------------------- ####
-Use this : importance = "permutation"
+# Use this : importance = "permutation"
 
 
 
